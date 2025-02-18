@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View PDF</title>
+</head>
+<body>
+    <h1>View Modified PDF</h1>
+    <iframe src="{{ MEDIA_URL }}{{ file_name }}" width="100%" height="600px"></iframe>
+    <br>
+    <a href="{% url 'download_pdf' file_name %}">Download PDF</a>
+    <br>
+    <a href="{% url 'upload_pdf' %}">Upload Another PDF</a>
+</body>
+</html>

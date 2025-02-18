@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modify PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f7ff 0%, #87CEEB 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #2c5282;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 30%;
+            padding: 2rem;
+            background-color: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-content {
+            width: 70%;
+            padding: 2rem;
+        }
+
+        .header {
+            color: #1a73e8;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #444;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #63b3ed 0%, #4299e1 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background-color: #1557b0;
+        }
+
+        .download-btn {
+            background-color: #34a853;
+            margin-top: 1rem;
+        }
+
+        .download-btn:hover {
+            background-color: #2d8e47;
+        }
+
+        #pdf-viewer {
+            height: calc(100vh - 4rem);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: auto;
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto 1rem;
+            max-width: 100%;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar with controls -->
+        <div class="sidebar">
+            <div class="header">PDF Editor</div>
+            
+            <!-- Form to find and replace words -->
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="dictionary_id" value="{{ dictionary.id }}">
+                
+                <div class="form-group">
+                    <label for="find_word">Find Word</label>
+                    <input type="text" name="find_word" placeholder="Enter word to find" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="replace_word">Replace With</label>
+                    <input type="text" name="replace_word" placeholder="Enter replacement word" required>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="submit" class="btn">Apply Changes</button>
+                    {% if modified_pdf_url %}
+                        <a href="{{ modified_pdf_url }}" download>
+                            <button type="button" class="btn download-btn">Download PDF</button>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Main content area with PDF viewer -->
+        <div class="main-content">
+            <div id="pdf-viewer">
+                <div class="loading">Loading PDF...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PDF.js viewer implementation (unchanged)
+        const pdfUrl = "{{ modified_pdf_url }}";
+        const pdfViewer = document.getElementById("pdf-viewer");
+
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        pdfjsLib.getDocument(pdfUrl).promise.then((pdf) => {
+            // Clear loading message
+            pdfViewer.innerHTML = '';
+            
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                pdf.getPage(pageNum).then((page) => {
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement("canvas");
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const context = canvas.getContext("2d");
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport,
+                    };
+
+                    page.render(renderContext).promise.then(() => {
+                        pdfViewer.appendChild(canvas);
+                    });
+                });
+            }
+        }).catch((error) => {
+            console.error("Error loading PDF: ", error);
+            pdfViewer.innerHTML = "<p class='loading'>Error loading PDF. Please try again later.</p>";
+        });
+    </script>
+</body>
+</html>
