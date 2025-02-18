@@ -1,1 +1,4 @@
 .env
+# Ignore uploaded media files
+media/
+
